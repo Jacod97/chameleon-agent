@@ -1,0 +1,34 @@
+# Hydra: cwd 변경 안 함 (results/, tb/ 가 프로젝트 루트 기준 유지되게)
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+
+# Unity 환경
+env_path: null          # null이면 에디터 플레이 모드로 연결. 빌드 실행 시 .exe 경로 지정
+seed: 0
+time_scale: 20          # 게임 시계 배속. 빌드 실행 시 학습 속도 ↑ (에디터에선 제한적)
+no_graphics: false      # true면 빌드를 화면 없이(headless) 실행. 카메라 센서 없어 안전
+
+# 네트워크
+pointnet_out: 128
+
+# 학습 루프
+max_iterations: 5000
+buf_size: 10240
+batch_size: 1024
+n_epochs: 3
+log_interval: 10
+save_interval: 200
+save_dir: results/run_01
+
+# PPO
+lr: 3.0e-4
+clip_eps: 0.2
+vf_coef: 0.5
+ent_coef: 0.01
+max_grad_norm: 0.5
+
+# GAE
+gamma: 0.99
+lam: 0.95

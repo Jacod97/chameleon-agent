@@ -1,0 +1,7 @@
+# Requires Python 3.10.x (3.10.1–3.10.12) — mlagents-envs 1.1.0 does not support 3.11+
+torch>=2.0.0
+mlagents-envs==1.1.0
+protobuf==3.20.3        # mlagents-envs needs <3.21; newer protobuf breaks its generated _pb2 code
+numpy>=1.23.5,<1.24.0   # pinned to mlagents-envs 1.1.0's supported range
+tensorboard>=2.13.0
+hydra-core>=1.3.0

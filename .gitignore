@@ -1,0 +1,42 @@
+# Docs
+*.pdf
+.obsidian/
+docs/
+.claude/
+CLAUDE.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Training
+results/
+*.pt
+*.onnx
+*.log
+
+# Hydra
+outputs/
+multirun/
+
+# Unity (project folder is Chameleon_env/)
+Chameleon_env/Library/
+Chameleon_env/Temp/
+Chameleon_env/Logs/
+Chameleon_env/UserSettings/
+Chameleon_env/obj/
+Chameleon_env/*.sln
+Chameleon_env/*.csproj
+Chameleon_env/Assets/ML-Agents/Timers/
+
+# Paid Asset Store assets — not redistributable (re-import from Asset Store)
+Chameleon_env/Assets/ThirdParty/
+Chameleon_env/Assets/ThirdParty.meta
+
+# Unity standalone builds
+Builds/

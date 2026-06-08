@@ -1,0 +1,33 @@
+using UnityEngine;
+
+namespace ChameleonRL
+{
+    /// <summary>
+    /// 보상 계수 일괄 관리. ScriptableObject 로 만들어 여러 환경에서 공유.
+    /// docs/RL_Design.md §3.3 의 r_catch / r_miss / r_time / r_approach / r_break / r_success.
+    /// </summary>
+    [CreateAssetMenu(fileName = "RewardConfig", menuName = "ChameleonRL/Reward Config")]
+    public class RewardConfig : ScriptableObject
+    {
+        [Header("모기 포획")]
+        public float catchReward = 1.0f;
+
+        [Header("허공 공격")]
+        [Tooltip("부호는 코드에서 - 적용")]
+        public float missPenalty = 0.05f;
+
+        [Header("시간")]
+        public float timePenaltyPerStep = 0.001f;
+
+        [Header("접근 (Reward Shaping)")]
+        [Tooltip("시야 안 최근접 모기 거리 감소량 × 이 계수")]
+        public float approachCoeff = 0.01f;
+
+        [Header("가구 파손")]
+        [Tooltip("부호는 코드에서 - 적용. §3.3 '큰 음수' — catch(1.0)보다 충분히 크게. 실험으로 조정")]
+        public float breakPenalty = 5.0f;
+
+        [Header("완전 포획 보너스")]
+        public float successBonus = 1.0f;
+    }
+}

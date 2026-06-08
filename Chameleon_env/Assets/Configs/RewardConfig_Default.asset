@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d68320f29ea4f8b4f9930f3e27ec167b, type: 3}
+  m_Name: RewardConfig_Default
+  m_EditorClassIdentifier:
+  catchReward: 1
+  missPenalty: 0.05
+  timePenaltyPerStep: 0.001
+  approachCoeff: 0.01
+  breakPenalty: 5
+  successBonus: 1
