@@ -20,6 +20,11 @@ results/
 *.onnx
 *.log
 
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
 # Hydra
 outputs/
 multirun/

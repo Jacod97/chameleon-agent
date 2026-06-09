@@ -8,16 +8,15 @@ from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.side_channel.environment_parameters_channel import EnvironmentParametersChannel
 
-# 프로젝트 루트를 path 에 추가 → refactoring 패키지 import 가능
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from refactoring.network import ActorCritic
-from refactoring.buffer import RolloutBuffer
-from refactoring.ppo import PPO
-from refactoring.communicator import UnityCommunicator
-from refactoring.curriculum import CurriculumManager, STAGES
-from refactoring.logger import MLflowLogger
-from refactoring.trainer import Trainer
+from src.network import ActorCritic
+from src.buffer import RolloutBuffer
+from src.ppo import PPO
+from src.communicator import UnityCommunicator
+from src.curriculum import CurriculumManager, STAGES
+from src.logger import MLflowLogger
+from src.trainer import Trainer
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="default")

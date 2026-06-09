@@ -49,13 +49,15 @@ namespace ChameleonRL
             Vector3 lo = Vector3.Lerp(nearMin, spawnMin, spawnScale);
             Vector3 hi = Vector3.Lerp(nearMax, spawnMax, spawnScale);
 
+            // 병렬 영역 지원: x,z 는 이 스포너(=영역) 위치 기준 상대, y(높이)는 절대(모든 영역 바닥 y=0)
+            Vector3 areaOrigin = transform.position;
             int n = Random.Range(cMin, cMax + 1);
             for (int i = 0; i < n; i++)
             {
                 Vector3 pos = new Vector3(
-                    Random.Range(lo.x, hi.x),
+                    areaOrigin.x + Random.Range(lo.x, hi.x),
                     Random.Range(lo.y, hi.y),
-                    Random.Range(lo.z, hi.z)
+                    areaOrigin.z + Random.Range(lo.z, hi.z)
                 );
                 var m = Instantiate(mosquitoPrefab, pos, Quaternion.identity, transform);
                 _alive.Add(m);

@@ -5,7 +5,7 @@ hydra:
   output_subdir: null
 
 # Unity 환경
-env_path: null          # null이면 에디터 플레이 모드로 연결. 빌드 실행 시 .exe 경로 지정
+env_path: Builds/MainEnv/Chameleon_env.exe          # null이면 에디터 플레이 모드로 연결. 빌드 실행 시 .exe 경로 지정
 seed: 0
 time_scale: 20          # 게임 시계 배속. 빌드 실행 시 학습 속도 ↑ (에디터에선 제한적)
 no_graphics: false      # true면 빌드를 화면 없이(headless) 실행. 카메라 센서 없어 안전

@@ -103,9 +103,10 @@ namespace ChameleonRL
         public override void CollectObservations(VectorSensor sensor)
         {
             // 벡터 관측 7-dim (docs/RL_Design.md §3.1)
-            // 위치 (방 원점 기준 절대), 방 반치수로 정규화 [-1, 1]
-            sensor.AddObservation(transform.position.x / positionNormScale);
-            sensor.AddObservation(transform.position.z / positionNormScale);
+            // 위치 = 자기 영역(방 중앙=초기 위치) 기준 상대좌표. 병렬 복제 시 영역 오프셋과 무관하게 [-1,1] 유지
+            Vector3 relativePosition = transform.position - _initialPosition;
+            sensor.AddObservation(relativePosition.x / positionNormScale);
+            sensor.AddObservation(relativePosition.z / positionNormScale);
             // 속도 [-1, 1] 근사
             sensor.AddObservation(_rb.linearVelocity.x / velocityNormScale);
             sensor.AddObservation(_rb.linearVelocity.z / velocityNormScale);

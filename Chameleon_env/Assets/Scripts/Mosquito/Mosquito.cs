@@ -46,9 +46,12 @@ namespace ChameleonRL
         private Vector3 _landTargetPoint;
         private Vector3 _landNormal;
         private bool _stationary;     // 커리큘럼: true면 스폰 자리에 완전 정지
+        private Vector3 _areaOrigin;  // 병렬 영역 중심(부모=스포너 위치) — x,z 경계 기준
 
         private void Start()
         {
+            // 병렬 영역 지원: 부모(스포너) 위치를 이 모기가 속한 영역 중심으로 사용
+            _areaOrigin = transform.parent != null ? transform.parent.position : Vector3.zero;
             // 커리큘럼 난이도 파라미터 (Python EnvironmentParametersChannel 에서 주입)
             var ep = Academy.Instance.EnvironmentParameters;
             _stationary = ep.GetWithDefault("mosquito_stationary", 0f) > 0.5f;
@@ -94,10 +97,10 @@ namespace ChameleonRL
             Vector3 step = _direction * flyingSpeed * Time.deltaTime;
             Vector3 next = transform.position + step;
 
-            // 방 경계 안에서 튕기기
-            if (next.x < roomMin.x || next.x > roomMax.x) _direction.x = -_direction.x;
+            // 방 경계 안에서 튕기기 (x,z 는 영역 중심 기준 상대, y 높이는 절대)
+            if (next.x < _areaOrigin.x + roomMin.x || next.x > _areaOrigin.x + roomMax.x) _direction.x = -_direction.x;
             if (next.y < roomMin.y || next.y > roomMax.y) _direction.y = -_direction.y;
-            if (next.z < roomMin.z || next.z > roomMax.z) _direction.z = -_direction.z;
+            if (next.z < _areaOrigin.z + roomMin.z || next.z > _areaOrigin.z + roomMax.z) _direction.z = -_direction.z;
 
             step = _direction * flyingSpeed * Time.deltaTime;
             transform.position += step;
