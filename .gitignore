@@ -33,6 +33,7 @@ Chameleon_env/obj/
 Chameleon_env/*.sln
 Chameleon_env/*.csproj
 Chameleon_env/Assets/ML-Agents/Timers/
+Builds/
 
 # Paid Asset Store assets — not redistributable (re-import from Asset Store)
 Chameleon_env/Assets/ThirdParty/

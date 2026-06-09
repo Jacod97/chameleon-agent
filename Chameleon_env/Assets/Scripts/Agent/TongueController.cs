@@ -43,18 +43,21 @@ namespace ChameleonRL
         private void Awake()
         {
             _agent = GetComponentInParent<ChameleonAgent>();
+            // fail-fast: 보상 전달 대상이 없으면 포획/미스 보상이 조용히 사라짐
+            if (_agent == null) throw new System.InvalidOperationException("[TongueController] 부모에 ChameleonAgent 없음");
+
             if (lineRenderer != null)
             {
-                lineRenderer.positionCount = 2;  // 시각화 라인 두 끝점
+                lineRenderer.positionCount = 2;  // 시각화 라인 두 끝점 (optional)
                 lineRenderer.enabled = false;
             }
             if (tongueTip != null) tongueTip.gameObject.SetActive(false);
 
-            // Layer 캐싱 (Tag 의존 X, Tag 미등록 환경에서도 안전)
+            // Layer 캐싱. 미등록이면 포획/끌림 판정이 조용히 영영 안 되므로 즉시 중단
             _mosquitoLayer = LayerMask.NameToLayer("Mosquito");
             _furnitureLayer = LayerMask.NameToLayer("Furniture");
-            if (_mosquitoLayer < 0) Debug.LogWarning("[TongueController] Mosquito Layer 미등록");
-            if (_furnitureLayer < 0) Debug.LogWarning("[TongueController] Furniture Layer 미등록");
+            if (_mosquitoLayer < 0) throw new System.InvalidOperationException("[TongueController] 'Mosquito' Layer 미등록 — Project Settings > Tags and Layers 에 추가 필요");
+            if (_furnitureLayer < 0) throw new System.InvalidOperationException("[TongueController] 'Furniture' Layer 미등록");
         }
 
         /// <summary>

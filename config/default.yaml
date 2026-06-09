@@ -26,7 +26,7 @@ save_dir: results/run_01
 lr: 3.0e-4
 clip_eps: 0.2
 vf_coef: 0.5
-ent_coef: 0.01
+ent_coef: 0.003
 max_grad_norm: 0.5
 
 # GAE

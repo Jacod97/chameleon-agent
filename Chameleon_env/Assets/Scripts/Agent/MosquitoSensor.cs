@@ -29,6 +29,10 @@ namespace ChameleonRL
         private void Awake()
         {
             _buffer = GetComponent<BufferSensorComponent>();
+            // fail-fast: 누락 시 관측·접근보상이 조용히 사라져 에이전트가 장님이 됨
+            if (spawner == null) throw new System.InvalidOperationException("[MosquitoSensor] spawner 미설정");
+            if (headCamera == null) throw new System.InvalidOperationException("[MosquitoSensor] headCamera 미설정");
+            if (agent == null) throw new System.InvalidOperationException("[MosquitoSensor] agent 미설정");
         }
 
         public void ResetState()
@@ -41,7 +45,7 @@ namespace ChameleonRL
         /// </summary>
         public void Tick()
         {
-            if (spawner == null || headCamera == null) return;
+            // 참조는 Awake 에서 검증됨 (null 이면 거기서 이미 중단)
 
             float halfFovCos = Mathf.Cos(fovDegrees * 0.5f * Mathf.Deg2Rad);
             float nearest = float.MaxValue;
@@ -87,7 +91,7 @@ namespace ChameleonRL
             if (nearest < float.MaxValue && _prevNearestDist < float.MaxValue)
             {
                 float reduction = _prevNearestDist - nearest;
-                if (reduction > 0f && agent != null) agent.OnApproach(reduction);
+                if (reduction > 0f) agent.OnApproach(reduction);
             }
             _prevNearestDist = nearest;
         }

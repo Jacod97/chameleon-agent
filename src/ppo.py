@@ -2,103 +2,87 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from ._type import RolloutBatch, PPOResult
 
 class PPO:
-    """
-    Args:
-        model: ActorCritic 네트워크.
-        lr: Adam 학습률.
-        clip_eps: PPO 클립 범위 epsilon.
-        vf_coef: 가치 함수 손실 계수.
-        ent_coef: 엔트로피 보너스 계수.
-        max_grad_norm: 그래디언트 클리핑 임계값.
-        n_epochs: 버퍼당 업데이트 횟수.
-        batch_size: 미니배치 크기.
-    """
     def __init__(
         self,
         model: nn.Module,
         lr: float,
-        clip_eps: float,
-        vf_coef: float,
-        ent_coef: float,
-        max_grad_norm: float,
-        n_epochs: int,
-        batch_size: int,
+        clip_epsilon: float,
+        value_loss_weight: float,
+        entropy_loss_weight: float,
+        gradient_clip_max: float,
+        epochs: int,
+        batch_size: int
     ):
-        self.model         = model
-        self.clip_eps      = clip_eps
-        self.vf_coef       = vf_coef
-        self.ent_coef      = ent_coef
-        self.max_grad_norm = max_grad_norm
-        self.n_epochs      = n_epochs
-        self.batch_size    = batch_size
-        self.optimizer     = torch.optim.Adam(model.parameters(), lr=lr)
+        self.model = model
+        self.clip_epsilon = clip_epsilon
+        self.value_loss_weight = value_loss_weight
+        self.entropy_loss_weight = entropy_loss_weight
+        self.gradient_clip_max = gradient_clip_max
+        self.epochs = epochs
+        self.batch_size = batch_size
 
-    def update(self, batch: dict) -> dict:
-        """
-        Args:
-            batch: RolloutBuffer.get()이 반환한 딕셔너리.
-                   keys: vec_obs, point_cloud, cont_acts, disc_acts,
-                         log_probs (old), advantages, returns.
-        Returns:
-            losses: 로깅용 손실 딕셔너리.
-                    keys: policy_loss, value_loss, entropy, total_loss.
-        """
-        vec_obs     = batch["vec_obs"]
-        point_cloud = batch["point_cloud"]
-        cont_acts   = batch["cont_acts"]
-        disc_acts   = batch["disc_acts"]
-        old_log_prob = batch["log_probs"]
-        advantages  = batch["advantages"]
-        returns     = batch["returns"]
+        self.optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-        n = vec_obs.shape[0]
-        idx = torch.arange(n, device=vec_obs.device)
+    def update(self, batch: RolloutBatch):
 
-        total_pl, total_vl, total_ent = 0.0, 0.0, 0.0
+        observation_vector = batch.observation_vector
+        point_clouds = batch.point_clouds
+        continuous_actions = batch.continuous_actions
+        discrete_actions = batch.discrete_actions
+        old_log_probs = batch.log_probs
+        advantages = batch.advantages
+        target_values = batch.target_values
 
-        for _ in range(self.n_epochs):
-            perm = idx[torch.randperm(n)]
-            for start in range(0, n, self.batch_size):
-                mb = perm[start:start + self.batch_size]
+        buffer_data_num = observation_vector.shape[0]
+        index = torch.arange(buffer_data_num, device=observation_vector.device)
+        total_loss_dict = {
+            "policy" : 0.0,
+            "value": 0.0,
+            "entropy": 0.0
+        }
 
-                # point_cloud 슬라이싱: 패딩 텐서 그대로 인덱싱
-                mb_pc = point_cloud[mb]
+        for _ in range(self.epochs):
+            perm = index[torch.randperm(buffer_data_num)] # data random sampling
+
+            for start in range(0, buffer_data_num, self.batch_size):
+                mini_batch = perm[start: start + self.batch_size]
 
                 log_prob, entropy, value = self.model.evaluate(
-                    vec_obs[mb], mb_pc, cont_acts[mb], disc_acts[mb]
+                    observation_vector[mini_batch],
+                    point_clouds[mini_batch],
+                    continuous_actions[mini_batch],
+                    discrete_actions[mini_batch]
                 )
 
-                # PPO 클립 손실
-                ratio = (log_prob - old_log_prob[mb]).exp()
-                adv   = advantages[mb]
-                surr1 = ratio * adv
-                surr2 = ratio.clamp(1.0 - self.clip_eps, 1.0 + self.clip_eps) * adv
-                policy_loss = -torch.min(surr1, surr2).mean()
+                ratio = (log_prob - old_log_probs[mini_batch]).exp()
+                advantage = advantages[mini_batch]
 
-                # 가치 함수 손실
-                value_loss = (returns[mb] - value).pow(2).mean()
+                unclipped_surrogate = ratio * advantage
+                clipped_surrogate = ratio.clamp(1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon) * advantage
 
-                # 엔트로피 보너스
+                policy_loss = -torch.min(unclipped_surrogate, clipped_surrogate).mean()
+                value_loss = (target_values[mini_batch] - value).pow(2).mean() # Critic 손실 (정답 target_value와의 MSE 차이)
                 entropy_loss = -entropy.mean()
 
-                loss = policy_loss + self.vf_coef * value_loss + self.ent_coef * entropy_loss
+                loss = policy_loss + self.value_loss_weight * value_loss + self.entropy_loss_weight * entropy_loss
 
                 self.optimizer.zero_grad()
                 loss.backward()
-                nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.gradient_clip_max)
                 self.optimizer.step()
 
-                total_pl  += policy_loss.item()
-                total_vl  += value_loss.item()
-                total_ent += entropy.mean().item()
+                total_loss_dict["policy"] += policy_loss.item()
+                total_loss_dict["value"] += value_loss.item()
+                total_loss_dict["entropy"] += entropy.mean().item()
 
-        n_minibatches = (n + self.batch_size - 1) // self.batch_size  # ceil, 마지막 부분 배치 포함
-        steps = self.n_epochs * max(1, n_minibatches)
-        return {
-            "policy_loss": total_pl  / steps,
-            "value_loss":  total_vl  / steps,
-            "entropy":     total_ent / steps,
-            "total_loss":  (total_pl + self.vf_coef * total_vl + self.ent_coef * (-total_ent)) / steps,
-        }
+        n_minibatches = (buffer_data_num + self.batch_size - 1) // self.batch_size
+        steps = self.epochs * max(1, n_minibatches)
+
+        return PPOResult(
+            policy_loss= total_loss_dict["policy"] / steps,
+            value_loss= total_loss_dict["value"] / steps,
+            entropy= total_loss_dict["entropy"] / steps
+        )

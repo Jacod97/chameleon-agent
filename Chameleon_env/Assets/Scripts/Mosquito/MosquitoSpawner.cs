@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.MLAgents;
 using UnityEngine;
 
 namespace ChameleonRL
@@ -33,20 +34,28 @@ namespace ChameleonRL
             }
             _alive.Clear();
 
-            // prefab 미설정 시 스폰 스킵 (사용자가 모기 에셋 받기 전 학습 동작 검증용)
+            // fail-fast: prefab 없으면 모기 0마리로 조용히 학습 진행(타겟 없음) → 즉시 중단
             if (mosquitoPrefab == null)
-            {
-                Debug.LogWarning("[MosquitoSpawner] mosquitoPrefab 미설정 — 스폰 건너뜀");
-                return;
-            }
+                throw new System.InvalidOperationException("[MosquitoSpawner] mosquitoPrefab 미설정 — 스폰 불가");
 
-            int n = Random.Range(minCount, maxCount + 1);
+            // 커리큘럼 난이도 파라미터 (Python EnvironmentParametersChannel 에서 주입)
+            var ep = Academy.Instance.EnvironmentParameters;
+            int cMin = Mathf.RoundToInt(ep.GetWithDefault("mosquito_count_min", minCount));
+            int cMax = Mathf.RoundToInt(ep.GetWithDefault("mosquito_count_max", maxCount));
+            // spawn_scale 0→근접·저공, 1→방 전체. 단계적으로 탐색 난이도 조절
+            float spawnScale = Mathf.Clamp01(ep.GetWithDefault("spawn_scale", 1f));
+            Vector3 nearMin = new Vector3(-1.2f, 0.3f, -1.2f);
+            Vector3 nearMax = new Vector3( 1.2f, 1.2f,  1.2f);
+            Vector3 lo = Vector3.Lerp(nearMin, spawnMin, spawnScale);
+            Vector3 hi = Vector3.Lerp(nearMax, spawnMax, spawnScale);
+
+            int n = Random.Range(cMin, cMax + 1);
             for (int i = 0; i < n; i++)
             {
                 Vector3 pos = new Vector3(
-                    Random.Range(spawnMin.x, spawnMax.x),
-                    Random.Range(spawnMin.y, spawnMax.y),
-                    Random.Range(spawnMin.z, spawnMax.z)
+                    Random.Range(lo.x, hi.x),
+                    Random.Range(lo.y, hi.y),
+                    Random.Range(lo.z, hi.z)
                 );
                 var m = Instantiate(mosquitoPrefab, pos, Quaternion.identity, transform);
                 _alive.Add(m);

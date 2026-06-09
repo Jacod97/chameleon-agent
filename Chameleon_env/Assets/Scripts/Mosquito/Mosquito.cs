@@ -1,3 +1,4 @@
+using Unity.MLAgents;
 using UnityEngine;
 
 namespace ChameleonRL
@@ -44,15 +45,21 @@ namespace ChameleonRL
         private bool _seekingLanding;
         private Vector3 _landTargetPoint;
         private Vector3 _landNormal;
+        private bool _stationary;     // 커리큘럼: true면 스폰 자리에 완전 정지
 
         private void Start()
         {
+            // 커리큘럼 난이도 파라미터 (Python EnvironmentParametersChannel 에서 주입)
+            var ep = Academy.Instance.EnvironmentParameters;
+            _stationary = ep.GetWithDefault("mosquito_stationary", 0f) > 0.5f;
+            flyingSpeed *= ep.GetWithDefault("mosquito_speed_scale", 1f);  // 비행 속도 배율
             PickNewDirection();
             EnterFlying();
         }
 
         private void Update()
         {
+            if (_stationary) { Velocity = Vector3.zero; return; }  // 정지 단계: 안 움직임
             _stateTimer += Time.deltaTime;
             if (State == MosquitoState.Flying) TickFlying();
             else TickLanded();

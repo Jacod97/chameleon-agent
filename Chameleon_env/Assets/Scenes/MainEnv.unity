@@ -1342,7 +1342,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: 'Chameleon '
   TeamId: 0
   m_UseChildSensors: 1
@@ -1511,8 +1511,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChameleonRL.MosquitoSpawner
   mosquitoPrefab: {fileID: 7831872360008584892, guid: d768ece02c6affa4ba4c03b265899f21, type: 3}
-  minCount: 3
-  maxCount: 10
+  minCount: 1
+  maxCount: 1
   spawnMin: {x: -3, y: 0.5, z: -3}
   spawnMax: {x: 3, y: 2.5, z: 3}
 --- !u!4 &376323455
@@ -3293,6 +3293,7 @@ MonoBehaviour:
   hitMask:
     serializedVersion: 2
     m_Bits: 1472
+  catchRadius: 0.3
 --- !u!120 &1230235913
 LineRenderer:
   serializedVersion: 3

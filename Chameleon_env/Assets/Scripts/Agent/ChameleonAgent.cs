@@ -49,14 +49,16 @@ namespace ChameleonRL
             _initialPosition = transform.position;
             _initialRotation = transform.rotation;
 
-            if (headPivot == null) Debug.LogError("[ChameleonAgent] headPivot 미설정");
-            if (headPitchPivot == null) Debug.LogError("[ChameleonAgent] headPitchPivot 미설정");
-            if (tongueMuzzle == null) Debug.LogError("[ChameleonAgent] tongueMuzzle 미설정");
-            if (furnitureRegistry == null) Debug.LogError("[ChameleonAgent] furnitureRegistry 미설정");
-            if (tongueController == null) Debug.LogError("[ChameleonAgent] tongueController 미설정");
-            if (mosquitoSpawner == null) Debug.LogError("[ChameleonAgent] mosquitoSpawner 미설정");
-            if (mosquitoSensor == null) Debug.LogError("[ChameleonAgent] mosquitoSensor 미설정");
-            if (rewardConfig == null) Debug.LogError("[ChameleonAgent] rewardConfig 미설정");
+            // fail-fast: 필수 참조 누락은 절대 정상이 아니므로 즉시 중단 (조용히 진행 금지)
+            if (headPivot == null) throw new System.InvalidOperationException("[ChameleonAgent] headPivot 미설정 — Inspector 배선 필요");
+            if (headPitchPivot == null) throw new System.InvalidOperationException("[ChameleonAgent] headPitchPivot 미설정");
+            if (tongueMuzzle == null) throw new System.InvalidOperationException("[ChameleonAgent] tongueMuzzle 미설정");
+            if (furnitureRegistry == null) throw new System.InvalidOperationException("[ChameleonAgent] furnitureRegistry 미설정");
+            if (tongueController == null) throw new System.InvalidOperationException("[ChameleonAgent] tongueController 미설정");
+            if (mosquitoSpawner == null) throw new System.InvalidOperationException("[ChameleonAgent] mosquitoSpawner 미설정");
+            if (mosquitoSensor == null) throw new System.InvalidOperationException("[ChameleonAgent] mosquitoSensor 미설정");
+            if (rewardConfig == null) throw new System.InvalidOperationException("[ChameleonAgent] rewardConfig 미설정");
+            if (mosquitoSpawner.mosquitoPrefab == null) throw new System.InvalidOperationException("[ChameleonAgent] mosquitoSpawner.mosquitoPrefab 미설정");
         }
 
         public override void OnEpisodeBegin()
@@ -68,20 +70,20 @@ namespace ChameleonRL
             _rb.angularVelocity = Vector3.zero;
 
             // ② 머리 회전 초기화
-            if (headPivot != null) headPivot.localEulerAngles = Vector3.zero;
-            if (headPitchPivot != null) headPitchPivot.localEulerAngles = Vector3.zero;
+            headPivot.localEulerAngles = Vector3.zero;
+            headPitchPivot.localEulerAngles = Vector3.zero;
 
             // ③ 가구 리셋 (먼저 — 모기가 가구 위에 착지할 수 있으므로)
-            if (furnitureRegistry != null) furnitureRegistry.ResetAll();
+            furnitureRegistry.ResetAll();
 
             // ④ 모기 재스폰
-            mosquitoSpawner?.RespawnAll();
+            mosquitoSpawner.RespawnAll();
 
             // ⑤ 혀 리셋
-            tongueController?.ResetState();
+            tongueController.ResetState();
 
             // ⑥ 센서 내부 캐시 리셋
-            mosquitoSensor?.ResetState();
+            mosquitoSensor.ResetState();
 
             // ⑦ 카운터 리셋
             _catches = 0;
@@ -119,7 +121,7 @@ namespace ChameleonRL
             sensor.AddObservation(remainingMosquitoes / 10f);
 
             // PointNet (BufferSensorComponent) 입력 채우기
-            mosquitoSensor?.Tick();
+            mosquitoSensor.Tick();
         }
 
         public override void OnActionReceived(ActionBuffers actions)
@@ -158,27 +160,24 @@ namespace ChameleonRL
             int attackCmd = actions.DiscreteActions[0];
             if (attackCmd == 1)
             {
-                tongueController?.TryFire();
+                tongueController.TryFire();
             }
 
             // 시간 패널티
-            if (rewardConfig != null) AddReward(-rewardConfig.timePenaltyPerStep);
+            AddReward(-rewardConfig.timePenaltyPerStep);
 
             // 가구 파손 → 실패 종료
-            if (furnitureRegistry != null && furnitureRegistry.AnyBroken())
+            if (furnitureRegistry.AnyBroken())
             {
-                if (rewardConfig != null) AddReward(-rewardConfig.breakPenalty);
+                AddReward(-rewardConfig.breakPenalty);
                 EndEpisode();
                 return;
             }
 
-            // 성공 종료: 모든 모기 잡음.
-            // mosquitoSpawner 또는 prefab 미설정 시 종료 안 함 (Heuristic 디버그용)
-            if (mosquitoSpawner != null
-                && mosquitoSpawner.mosquitoPrefab != null
-                && mosquitoSpawner.AliveCount == 0)
+            // 성공 종료: 모든 모기 잡음
+            if (mosquitoSpawner.AliveCount == 0)
             {
-                if (rewardConfig != null) AddReward(+rewardConfig.successBonus);
+                AddReward(+rewardConfig.successBonus);
                 EndEpisode();
             }
         }
@@ -212,24 +211,24 @@ namespace ChameleonRL
 
         public void OnMosquitoCaught()
         {
-            if (rewardConfig != null) AddReward(+rewardConfig.catchReward);
+            AddReward(+rewardConfig.catchReward);
             _catches++;
         }
 
         public void OnAttackMissed()
         {
-            if (rewardConfig != null) AddReward(-rewardConfig.missPenalty);
+            AddReward(-rewardConfig.missPenalty);
             _misses++;
         }
 
         public void OnApproach(float distanceReduction)
         {
-            if (rewardConfig != null) AddReward(rewardConfig.approachCoeff * distanceReduction);
+            AddReward(rewardConfig.approachCoeff * distanceReduction);
         }
 
         private int GetRemainingMosquitoCount()
         {
-            return mosquitoSpawner != null ? mosquitoSpawner.AliveCount : 0;
+            return mosquitoSpawner.AliveCount;
         }
 
         private static float NormalizeAngle(float deg)
