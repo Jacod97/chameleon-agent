@@ -33,7 +33,14 @@ class RolloutBatch:
 class PPOResult:
     """PPO의 1회 update 세션 동안 계산된 평균 손실 및 지표.
     entropy 는 연속/이산 분리 — 이산(발사) 탐색 붕괴를 따로 모니터링"""
-    policy_loss: float
-    value_loss: float
-    entropy_continuous: float
-    entropy_discrete: float
+    policy_loss: float = 0.0
+    value_loss: float = 0.0
+    entropy_continuous: float = 0.0
+    entropy_discrete: float = 0.0
+    approx_kl: float = 0.0
+    clip_fraction: float = 0.0
+    explained_variance: float = 0.0
+
+    def averaged(self, steps: int) -> "PPOResult":
+        """미니배치 합산값을 update 횟수로 나눈 평균"""
+        return PPOResult(**{k: v / steps for k, v in asdict(self).items()})

@@ -27,13 +27,15 @@ class CurriculumManager:
         stages: list[CurriculumStage] = None,
         threshold: float = 0.8,
         window: int = 50,
+        start_index: int = 0,
     ):
         self.channel = channel
         self.stages = stages if stages is not None else STAGES
         self.threshold = threshold
         self.window_size = window
         self._window = deque(maxlen=window)
-        self._idx = 0
+        self._idx = max(0, min(start_index, len(self.stages) - 1))
+        self._last_advance_rate = float("nan")
 
     def start(self):
         """학습 시작 전 1단계 파라미터 주입"""
@@ -44,6 +46,7 @@ class CurriculumManager:
         self._window.extend(ep_successes)
         if self._idx < len(self.stages) - 1 and len(self._window) >= self.window_size:
             if self.success_rate >= self.threshold:
+                self._last_advance_rate = self.success_rate
                 self._idx += 1
                 self._apply(self.stages[self._idx])
                 self._window.clear()
@@ -58,6 +61,10 @@ class CurriculumManager:
     @property
     def success_rate(self) -> float:
         return sum(self._window) / len(self._window) if self._window else float("nan")
+
+    @property
+    def last_advance_rate(self) -> float:
+        return self._last_advance_rate
 
     @property
     def stage_index(self) -> int:

@@ -19,8 +19,6 @@ class PPO:
         self.model = model
         self.clip_epsilon = clip_epsilon
         self.value_loss_weight = value_loss_weight
-        # entropy 계수 분리: 연속 4차원 entropy 합이 이산(≤log2) entropy 를 압도하므로
-        # 단일 계수로는 발사/대기 탐색 유지 인센티브가 사실상 0 — 이산에 별도(더 큰) 계수 적용
         self.entropy_loss_weight = entropy_loss_weight
         self.discrete_entropy_weight = discrete_entropy_weight
         self.gradient_clip_max = gradient_clip_max
@@ -41,12 +39,7 @@ class PPO:
 
         buffer_data_num = observation_vector.shape[0]
         index = torch.arange(buffer_data_num, device=observation_vector.device)
-        total_loss_dict = {
-            "policy": 0.0,
-            "value": 0.0,
-            "entropy_continuous": 0.0,
-            "entropy_discrete": 0.0,
-        }
+        accumulated_result = PPOResult()
 
         for _ in range(self.epochs):
             perm = index[torch.randperm(buffer_data_num)] # data random sampling
@@ -61,7 +54,8 @@ class PPO:
                     discrete_actions[mini_batch]
                 )
 
-                ratio = (log_prob - old_log_probs[mini_batch]).exp()
+                log_ratio = log_prob - old_log_probs[mini_batch]
+                ratio = log_ratio.exp()
                 advantage = advantages[mini_batch]
 
                 unclipped_surrogate = ratio * advantage
@@ -79,17 +73,19 @@ class PPO:
                 nn.utils.clip_grad_norm_(self.model.parameters(), self.gradient_clip_max)
                 self.optimizer.step()
 
-                total_loss_dict["policy"] += policy_loss.item()
-                total_loss_dict["value"] += value_loss.item()
-                total_loss_dict["entropy_continuous"] += entropy_cont.mean().item()
-                total_loss_dict["entropy_discrete"] += entropy_disc.mean().item()
+                accumulated_result.policy_loss += policy_loss.item()
+                accumulated_result.value_loss += value_loss.item()
+                accumulated_result.entropy_continuous += entropy_cont.mean().item()
+                accumulated_result.entropy_discrete += entropy_disc.mean().item()
+
+                with torch.no_grad():
+                    minibatch_target_values = target_values[mini_batch]
+                    accumulated_result.approx_kl += ((ratio - 1.0) - log_ratio).mean().item()
+                    accumulated_result.clip_fraction += ((ratio - 1.0).abs() > self.clip_epsilon).float().mean().item()
+                    accumulated_result.explained_variance += (
+                        1.0 - (minibatch_target_values - value).var() / (minibatch_target_values.var() + 1e-8)
+                    ).item()
 
         n_minibatches = (buffer_data_num + self.batch_size - 1) // self.batch_size
         steps = self.epochs * max(1, n_minibatches)
-
-        return PPOResult(
-            policy_loss=total_loss_dict["policy"] / steps,
-            value_loss=total_loss_dict["value"] / steps,
-            entropy_continuous=total_loss_dict["entropy_continuous"] / steps,
-            entropy_discrete=total_loss_dict["entropy_discrete"] / steps,
-        )
+        return accumulated_result.averaged(steps)
