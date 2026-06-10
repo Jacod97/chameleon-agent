@@ -36,14 +36,13 @@ class Trainer:
         self.save_interval = save_interval
 
     def train(self):
-        # 커리큘럼 1단계는 호출자(scripts/train.py)가 env.reset 전에 start() 해둠
         print(f"[curriculum] start stage: {self.curriculum.stage_name}")
         total_steps = 0
 
         for iteration in range(self.max_iterations):
             self.buffer.reset()
-            last_value, ep_rewards, ep_successes = self.communicator.collect(self.model, self.buffer)
-            batch = self.buffer.get(last_value)
+            last_vals, ep_rewards, ep_successes = self.communicator.collect(self.model, self.buffer)
+            batch = self.buffer.get(last_vals)
             result = self.ppo.update(batch)
             total_steps += self.buffer.pointer
 
@@ -55,7 +54,8 @@ class Trainer:
             self.logger.log_metrics({
                 "policy_loss": result.policy_loss,
                 "value_loss": result.value_loss,
-                "entropy": result.entropy,
+                "entropy_continuous": result.entropy_continuous,
+                "entropy_discrete": result.entropy_discrete,  # 발사 탐색 붕괴 감시 — 0.1 미만이면 굳은 것
                 "ep_reward_mean": mean_reward,
                 "success_rate": self.curriculum.success_rate,
                 "stage": self.curriculum.stage_index + 1,
@@ -64,7 +64,8 @@ class Trainer:
             if (iteration + 1) % self.log_interval == 0:
                 print(f"[{iteration+1:5d}] stage={self.curriculum.stage_index+1} steps={total_steps:7d} | "
                       f"ep_reward={mean_reward:.2f} | succ={self.curriculum.success_rate:.2f} | "
-                      f"policy={result.policy_loss:.4f} value={result.value_loss:.4f} entropy={result.entropy:.4f}")
+                      f"policy={result.policy_loss:.4f} value={result.value_loss:.4f} "
+                      f"ent_c={result.entropy_continuous:.4f} ent_d={result.entropy_discrete:.4f}")
 
             if (iteration + 1) % self.save_interval == 0:
                 self.save(f"model_{iteration+1}")

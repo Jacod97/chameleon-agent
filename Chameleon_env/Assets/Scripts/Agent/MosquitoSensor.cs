@@ -20,6 +20,10 @@ namespace ChameleonRL
         public float fovDegrees = 90f;
         public float maxDetectRange = 3f;
 
+        [Tooltip("속도 정규화 기준. Mosquito.flyingSpeed 기본값(1.0)과 맞출 것. " +
+                 "커리큘럼 mosquito_speed_scale 최대치에 맞게 조정 필요.")]
+        public float maxMosquitoSpeed = 1.0f;
+
         [Header("Occlusion 차단 레이어 (Room + Furniture)")]
         public LayerMask occlusionMask;
 
@@ -50,10 +54,9 @@ namespace ChameleonRL
             float halfFovCos = Mathf.Cos(fovDegrees * 0.5f * Mathf.Deg2Rad);
             float nearest = float.MaxValue;
 
+            // Alive 는 포획 즉시 동기 제거되므로 null/파괴 객체가 섞일 수 없음 (섞이면 그게 버그)
             foreach (var m in spawner.Alive)
             {
-                if (m == null) continue;
-
                 Vector3 toMosquito = m.transform.position - headCamera.position;
                 float dist = toMosquito.magnitude;
                 if (dist > maxDetectRange) continue;
@@ -78,9 +81,9 @@ namespace ChameleonRL
                     relPos.x / maxDetectRange,
                     relPos.y / maxDetectRange,
                     relPos.z / maxDetectRange,
-                    relVel.x,
-                    relVel.y,
-                    relVel.z,
+                    relVel.x / maxMosquitoSpeed,
+                    relVel.y / maxMosquitoSpeed,
+                    relVel.z / maxMosquitoSpeed,
                 };
                 _buffer.AppendObservation(obs);
 

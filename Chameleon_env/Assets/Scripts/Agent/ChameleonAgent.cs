@@ -8,9 +8,9 @@ namespace ChameleonRL
 {
     /// <summary>
     /// 카멜레온 에이전트. Unity ML-Agents Agent 를 상속.
-    /// 관측 7-dim 벡터 + PointNet BufferSensor (모기 집합).
+    /// 관측 9-dim 벡터 + PointNet BufferSensor (모기 집합).
     /// 행동 연속 4 + 이산 2 (대기/혀발사).
-    /// 보상: r_catch + r_miss + r_time + r_approach + r_break + r_success.
+    /// 보상: r_catch + r_miss + r_time + r_approach + r_break + r_success + r_precision.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public class ChameleonAgent : Agent
@@ -24,6 +24,8 @@ namespace ChameleonRL
         public float maxYawRateHead = 180f;
         public float maxPitchRateHead = 120f;
         public Vector2 pitchClamp = new Vector2(-60f, 45f);
+        [Tooltip("머리 yaw 제한. 무제한 회전 시 ±180° 관측 불연속이 생겨 가치 학습을 방해")]
+        public Vector2 yawClamp = new Vector2(-90f, 90f);
 
         [Header("씬 참조")]
         public Transform headPivot;
@@ -94,8 +96,8 @@ namespace ChameleonRL
         [Tooltip("위치 정규화 기준 (방 반치수 = 3.5m)")]
         public float positionNormScale = 3.5f;
 
-        [Tooltip("속도 정규화 기준 (max 이동 속도 ~0.5)")]
-        public float velocityNormScale = 1.0f;
+        [Tooltip("속도 정규화 기준 (max 이동 속도 = maxForwardSpeed 값과 맞출 것)")]
+        public float velocityNormScale = 0.5f;
 
         [Tooltip("머리 pitch 정규화 기준 (clamp 절댓값 max ~60도)")]
         public float pitchNormScale = 60f;
@@ -107,19 +109,26 @@ namespace ChameleonRL
             Vector3 relativePosition = transform.position - _initialPosition;
             sensor.AddObservation(relativePosition.x / positionNormScale);
             sensor.AddObservation(relativePosition.z / positionNormScale);
-            // 속도 [-1, 1] 근사
-            sensor.AddObservation(_rb.linearVelocity.x / velocityNormScale);
-            sensor.AddObservation(_rb.linearVelocity.z / velocityNormScale);
+            // 속도: 로컬 좌표계 (몸체 방향 기준). 월드 좌표 쓰면 회전 각도에 따라 같은 행동이 다른 관측 생성.
+            Vector3 localVelocity = transform.InverseTransformDirection(_rb.linearVelocity);
+            sensor.AddObservation(localVelocity.x / velocityNormScale);
+            sensor.AddObservation(localVelocity.z / velocityNormScale);
 
-            // 머리 각도 정규화
+            // 머리 각도 정규화 (yaw 는 clamp 범위 기준 — 불연속 없음)
             float headPitch = NormalizeAngle(headPitchPivot.localEulerAngles.x);
             float headYaw = NormalizeAngle(headPivot.localEulerAngles.y);
             sensor.AddObservation(headPitch / pitchNormScale);  // [-60/60, 45/60] ≈ [-1, 0.75]
-            sensor.AddObservation(headYaw / 180f);              // [-1, 1]
+            sensor.AddObservation(headYaw / yawClamp.y);        // [-1, 1]
 
             // 남은 모기 수 (max 10 기준)
             int remainingMosquitoes = GetRemainingMosquitoCount();
             sensor.AddObservation(remainingMosquitoes / 10f);
+
+            // 혀 준비 상태 — 쿨다운(사이클) 중 발사 무효를 에이전트가 알 수 있게 (POMDP 해소)
+            sensor.AddObservation(tongueController.State == TongueController.TongueState.Idle ? 1f : 0f);
+
+            // 무실수 플래그 — precision bonus(+2) 수령 가능 여부. 없으면 가치함수가 원리적으로 예측 불가
+            sensor.AddObservation(_misses == 0 ? 1f : 0f);
 
             // PointNet (BufferSensorComponent) 입력 채우기
             mosquitoSensor.Tick();
@@ -146,9 +155,11 @@ namespace ChameleonRL
             float bodyYawDelta = yawBodyCmd * maxYawRateBody * dt;
             transform.Rotate(Vector3.up, bodyYawDelta, Space.World);
 
-            // 머리 yaw
+            // 머리 yaw (clamp — 무제한 회전 방지)
             float headYawDelta = yawHeadCmd * maxYawRateHead * dt;
-            headPivot.Rotate(Vector3.up, headYawDelta, Space.Self);
+            float currentYaw = NormalizeAngle(headPivot.localEulerAngles.y);
+            float newYaw = Mathf.Clamp(currentYaw + headYawDelta, yawClamp.x, yawClamp.y);
+            headPivot.localEulerAngles = new Vector3(0f, newYaw, 0f);
 
             // 머리 pitch (clamp)
             float headPitchDelta = pitchHeadCmd * maxPitchRateHead * dt;
@@ -179,6 +190,9 @@ namespace ChameleonRL
             if (mosquitoSpawner.AliveCount == 0)
             {
                 AddReward(+rewardConfig.successBonus);
+                // 헛스윙 없이 전멸 — 정밀 사격 희소 보상
+                if (_misses == 0 && rewardConfig.precisionBonus > 0f)
+                    AddReward(+rewardConfig.precisionBonus);
                 EndEpisode();
             }
         }

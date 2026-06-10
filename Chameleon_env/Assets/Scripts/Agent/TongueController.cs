@@ -76,19 +76,28 @@ namespace ChameleonRL
             if (lineRenderer != null) lineRenderer.enabled = true;
             if (tongueTip != null) tongueTip.gameObject.SetActive(true);
 
-            // 발사 순간 spherecast 로 첫 충돌 지점 확정 (catchRadius 만큼 허용 반경)
-            if (Physics.SphereCast(muzzle.position, catchRadius, muzzle.forward, out RaycastHit hit,
-                maxRange, hitMask, QueryTriggerInteraction.Collide))
+            // ① 모기 레이어 우선 spherecast — 표면 5mm 위에 착지한 모기가
+            //    바닥/가구 콜라이더에 가려 영영 안 잡히는 문제 방지
+            int mosquitoMask = 1 << _mosquitoLayer;
+            int obstacleMask = hitMask & ~mosquitoMask;
+
+            if (Physics.SphereCast(muzzle.position, catchRadius, muzzle.forward, out RaycastHit mosquitoHit,
+                    maxRange, mosquitoMask, QueryTriggerInteraction.Collide)
+                // 차폐 확인: 모기까지의 직선상에 장애물이 있으면 무효 (가구 뒤 모기 관통 방지)
+                && !Physics.Raycast(muzzle.position, muzzle.forward, mosquitoHit.distance,
+                    obstacleMask, QueryTriggerInteraction.Ignore))
+            {
+                _hitPointLocal = muzzle.InverseTransformPoint(mosquitoHit.point);
+                _caughtMosquito = true;
+                _attachedObject = mosquitoHit.collider.gameObject;
+            }
+            // ② 모기를 못 맞췄으면 장애물 대상 spherecast (시각화·흡착용)
+            else if (Physics.SphereCast(muzzle.position, catchRadius, muzzle.forward, out RaycastHit hit,
+                maxRange, obstacleMask, QueryTriggerInteraction.Collide))
             {
                 _hitPointLocal = muzzle.InverseTransformPoint(hit.point);
 
-                int hitLayer = hit.collider.gameObject.layer;
-                if (hitLayer == _mosquitoLayer)
-                {
-                    _caughtMosquito = true;
-                    _attachedObject = hit.collider.gameObject;
-                }
-                else if (hitLayer == _furnitureLayer)
+                if (hit.collider.gameObject.layer == _furnitureLayer)
                 {
                     _attachedObject = hit.collider.attachedRigidbody != null
                         ? hit.collider.attachedRigidbody.gameObject
@@ -105,14 +114,31 @@ namespace ChameleonRL
                 _hitPointLocal = new Vector3(0f, 0f, maxRange);
             }
 
+            // 보상·판정은 발사 순간 확정 (FinishCycle 까지 15 fixed step 지연 시
+            // 행동-보상 인과가 어긋나고, 잡힌 모기가 관측에 유령으로 잔존)
+            if (_caughtMosquito)
+            {
+                var mosquito = _attachedObject.GetComponent<Mosquito>();
+                if (mosquito == null) throw new System.InvalidOperationException(
+                    "[TongueController] Mosquito 레이어 오브젝트에 Mosquito 컴포넌트 없음");
+
+                _agent.OnMosquitoCaught();                 // 보상 즉시 지급
+                _agent.mosquitoSpawner.Remove(mosquito);   // 생존 목록·관측에서 즉시 제거
+                mosquito.MarkCaught();                     // 자체 이동 정지 + 콜라이더 비활성
+            }
+            else
+            {
+                _agent.OnAttackMissed();                   // 미스도 발사 순간 확정
+            }
+
             return true;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (State == TongueState.Idle) return;
 
-            _cycleTime += Time.deltaTime;
+            _cycleTime += Time.fixedDeltaTime;
             float halfCycle = cycleSeconds * 0.5f;
 
             float t;
@@ -150,14 +176,10 @@ namespace ChameleonRL
 
         private void FinishCycle()
         {
+            // 보상·생존 목록 처리는 TryFire 에서 이미 완료 — 여기서는 시각 잔상만 정리
             if (_caughtMosquito && _attachedObject != null)
             {
-                _agent.OnMosquitoCaught();
                 Destroy(_attachedObject);
-            }
-            else
-            {
-                _agent.OnAttackMissed();
             }
 
             State = TongueState.Idle;
@@ -186,6 +208,10 @@ namespace ChameleonRL
         /// </summary>
         public void ResetState()
         {
+            // 사이클 도중 에피소드가 끝났으면 견인 중이던 모기 시각 오브젝트 정리
+            // (이미 Alive 에서 제거됐으므로 RespawnAll 이 파괴해주지 않음)
+            if (_caughtMosquito && _attachedObject != null) Destroy(_attachedObject);
+
             State = TongueState.Idle;
             _cycleTime = 0f;
             _attachedObject = null;

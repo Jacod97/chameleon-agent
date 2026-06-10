@@ -60,12 +60,26 @@ namespace ChameleonRL
             EnterFlying();
         }
 
-        private void Update()
+        // FixedUpdate 필수: 관측·혀 판정·물리가 전부 FixedUpdate 기반.
+        // 렌더 프레임(Update) 이동은 time_scale 20 빌드에서 모기가 스텝당 ~0.3m 씩
+        // 순간이동하게 만들어 관측-실제 위치가 어긋남
+        private void FixedUpdate()
         {
             if (_stationary) { Velocity = Vector3.zero; return; }  // 정지 단계: 안 움직임
-            _stateTimer += Time.deltaTime;
+            _stateTimer += Time.fixedDeltaTime;
             if (State == MosquitoState.Flying) TickFlying();
             else TickLanded();
+        }
+
+        /// <summary>
+        /// TongueController 가 포획 확정 시 호출.
+        /// 이동 정지 + 콜라이더 비활성 (혀끝 견인 시각 잔상 동안 재히트·재관측 방지).
+        /// </summary>
+        public void MarkCaught()
+        {
+            enabled = false;
+            Velocity = Vector3.zero;
+            GetComponent<Collider>().enabled = false;
         }
 
         private void TickFlying()
@@ -76,7 +90,7 @@ namespace ChameleonRL
                 Vector3 toTarget = _landTargetPoint - transform.position;
                 float remaining = toTarget.magnitude;
                 if (remaining > 1e-4f) _direction = toTarget / remaining;
-                transform.position += _direction * flyingSpeed * Time.deltaTime;
+                transform.position += _direction * flyingSpeed * Time.fixedDeltaTime;
                 Velocity = _direction * flyingSpeed;
 
                 if (remaining <= landSnapDistance)
@@ -87,14 +101,14 @@ namespace ChameleonRL
                 return;
             }
 
-            _directionTimer += Time.deltaTime;
+            _directionTimer += Time.fixedDeltaTime;
             if (_directionTimer >= 1f / Mathf.Max(0.01f, directionChangeRate))
             {
                 _directionTimer = 0f;
                 PickNewDirection();
             }
 
-            Vector3 step = _direction * flyingSpeed * Time.deltaTime;
+            Vector3 step = _direction * flyingSpeed * Time.fixedDeltaTime;
             Vector3 next = transform.position + step;
 
             // 방 경계 안에서 튕기기 (x,z 는 영역 중심 기준 상대, y 높이는 절대)
@@ -102,7 +116,7 @@ namespace ChameleonRL
             if (next.y < roomMin.y || next.y > roomMax.y) _direction.y = -_direction.y;
             if (next.z < _areaOrigin.z + roomMin.z || next.z > _areaOrigin.z + roomMax.z) _direction.z = -_direction.z;
 
-            step = _direction * flyingSpeed * Time.deltaTime;
+            step = _direction * flyingSpeed * Time.fixedDeltaTime;
             transform.position += step;
             Velocity = _direction * flyingSpeed;
 

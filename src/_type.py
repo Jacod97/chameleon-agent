@@ -19,18 +19,21 @@ class CurriculumStage:
 
 @dataclass
 class RolloutBatch:
-    """RolloutBuffer에서 최종 가공되어 학습에 주입될 데이터 패키지"""
+    """RolloutBuffer에서 최종 가공되어 학습에 주입될 데이터 패키지.
+    continuous 행동은 pre-tanh u 로 저장 — evaluate 에서 atanh 역연산 없이 정확 재계산"""
     observation_vector: torch.Tensor
     point_clouds: torch.Tensor
-    continuous_actions: torch.Tensor
+    pre_tanh_actions: torch.Tensor
     discrete_actions: torch.Tensor
     log_probs: torch.Tensor
     advantages: torch.Tensor
-    target_values: torch.Tensor 
+    target_values: torch.Tensor
 
 @dataclass
 class PPOResult:
-    """PPO의 1회 update 세션 동안 계산된 평균 손실 및 지표"""
+    """PPO의 1회 update 세션 동안 계산된 평균 손실 및 지표.
+    entropy 는 연속/이산 분리 — 이산(발사) 탐색 붕괴를 따로 모니터링"""
     policy_loss: float
     value_loss: float
-    entropy: float
+    entropy_continuous: float
+    entropy_discrete: float

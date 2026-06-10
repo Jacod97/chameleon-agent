@@ -21,6 +21,11 @@ namespace ChameleonRL
         public Vector3 spawnMin = new Vector3(-3.0f, 0.5f, -3.0f);
         public Vector3 spawnMax = new Vector3(3.0f, 2.5f, 3.0f);
 
+        [Tooltip("정지(stationary) 커리큘럼 단계의 스폰 높이 상한. " +
+                 "혀 최대 도달 높이(muzzle + 2.5×sin60° ≈ 2.2m)를 넘는 위치에 정지 모기가 스폰되면 " +
+                 "영원히 잡을 수 없는 에피소드가 되어 커리큘럼이 영구 정체됨")]
+        public float stationaryMaxSpawnY = 1.8f;
+
         public int AliveCount => _alive.Count;
         public IReadOnlyList<Mosquito> Alive => _alive;
 
@@ -49,6 +54,10 @@ namespace ChameleonRL
             Vector3 lo = Vector3.Lerp(nearMin, spawnMin, spawnScale);
             Vector3 hi = Vector3.Lerp(nearMax, spawnMax, spawnScale);
 
+            // 정지 단계: 도달 불가능한 높이 스폰 차단 (도달 불가 에피소드 = 커리큘럼 정체)
+            bool stationary = ep.GetWithDefault("mosquito_stationary", 0f) > 0.5f;
+            if (stationary) hi.y = Mathf.Min(hi.y, stationaryMaxSpawnY);
+
             // 병렬 영역 지원: x,z 는 이 스포너(=영역) 위치 기준 상대, y(높이)는 절대(모든 영역 바닥 y=0)
             Vector3 areaOrigin = transform.position;
             int n = Random.Range(cMin, cMax + 1);
@@ -64,13 +73,16 @@ namespace ChameleonRL
             }
         }
 
-        private void Update()
+        /// <summary>
+        /// TongueController 가 포획 확정 순간 호출. 동기적으로 제거되어
+        /// AliveCount·관측·전멸 판정이 같은 FixedUpdate 안에서 일관됨.
+        /// (기존 렌더 프레임 Update 정리 방식은 time_scale 20 에서 수 decision 지연)
+        /// </summary>
+        public void Remove(Mosquito m)
         {
-            // TongueController 가 Destroy 한 모기를 캐시에서 제거
-            for (int i = _alive.Count - 1; i >= 0; i--)
-            {
-                if (_alive[i] == null) _alive.RemoveAt(i);
-            }
+            if (!_alive.Remove(m))
+                throw new System.InvalidOperationException(
+                    $"[MosquitoSpawner] Alive 목록에 없는 모기 제거 시도: {m.name}");
         }
     }
 }

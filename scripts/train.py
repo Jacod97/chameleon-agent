@@ -61,6 +61,7 @@ def main(cfg: DictConfig):
     ppo = PPO(
         model=model, lr=cfg["lr"], clip_epsilon=cfg["clip_eps"],
         value_loss_weight=cfg["vf_coef"], entropy_loss_weight=cfg["ent_coef"],
+        discrete_entropy_weight=cfg["ent_coef_disc"],
         gradient_clip_max=cfg["max_grad_norm"], epochs=cfg["n_epochs"], batch_size=cfg["batch_size"],
     )
     buffer = RolloutBuffer(
@@ -73,7 +74,8 @@ def main(cfg: DictConfig):
     logger = MLflowLogger(experiment_name="chameleon-rl")
     logger.log_params({
         "lr": cfg["lr"], "clip_eps": cfg["clip_eps"], "vf_coef": cfg["vf_coef"],
-        "ent_coef": cfg["ent_coef"], "max_grad_norm": cfg["max_grad_norm"],
+        "ent_coef": cfg["ent_coef"], "ent_coef_disc": cfg["ent_coef_disc"],
+        "max_grad_norm": cfg["max_grad_norm"],
         "n_epochs": cfg["n_epochs"], "batch_size": cfg["batch_size"], "buf_size": cfg["buf_size"],
         "gamma": cfg["gamma"], "lam": cfg["lam"], "time_scale": cfg.get("time_scale", 20.0),
         "pointnet_out": cfg["pointnet_out"], "seed": cfg.get("seed", 0),

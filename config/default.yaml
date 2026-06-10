@@ -26,7 +26,8 @@ save_dir: results/run_01
 lr: 3.0e-4
 clip_eps: 0.2
 vf_coef: 0.5
-ent_coef: 0.003
+ent_coef: 0.003        # 연속 행동 entropy 계수
+ent_coef_disc: 0.01    # 이산(발사) entropy 계수 — 연속과 분리. H_disc ≤ log2 라 합산 시 묻힘
 max_grad_norm: 0.5
 
 # GAE

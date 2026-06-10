@@ -15,6 +15,7 @@ MonoBehaviour:
   catchReward: 1
   missPenalty: 0.05
   timePenaltyPerStep: 0.001
-  approachCoeff: 0.01
+  approachCoeff: 0.05
   breakPenalty: 5
   successBonus: 1
+  precisionBonus: 2

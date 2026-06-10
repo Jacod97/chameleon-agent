@@ -10,8 +10,8 @@ class RolloutBuffer:
         observation_dim: int,
         continuous_dim: int,
         discrete_size: int,
-        gamma: float, # discount factor
-        lamda: float, # lambda
+        gamma: float,
+        lamda: float,
         device: torch.device
     ):
         self.buffer_size = buffer_size
@@ -20,7 +20,8 @@ class RolloutBuffer:
         self.device = device
 
         self.observation_vector = torch.zeros(buffer_size, observation_dim)
-        self.continuous_actions = torch.zeros(buffer_size, continuous_dim)
+        # pre-tanh u 저장 (tanh 적용 전) — evaluate 시 atanh 복원 불필요, 경계 수치 오차 제거
+        self.pre_tanh_actions = torch.zeros(buffer_size, continuous_dim)
         self.discrete_actions = torch.zeros(buffer_size, discrete_size, dtype=torch.long)
 
         self.log_probs = torch.zeros(buffer_size)
@@ -28,7 +29,8 @@ class RolloutBuffer:
         self.values = torch.zeros(buffer_size)
         self.dones = torch.zeros(buffer_size)
         self.bootstraps = torch.zeros(buffer_size)
-        
+        self.agent_ids = torch.zeros(buffer_size, dtype=torch.long)
+
         self.pointer = 0
         self.point_clouds = []
 
@@ -36,66 +38,79 @@ class RolloutBuffer:
         self,
         observation_vector: torch.Tensor,
         point_cloud: torch.Tensor,
-        continuous_action: torch.Tensor,
+        pre_tanh_action: torch.Tensor,
         discrete_action: torch.Tensor,
         log_prob: torch.Tensor,
         reward: float,
         value: torch.Tensor,
         done: bool,
+        agent_id: int,
         bootstrap_value: float = 0.0,
     ):
         i = self.pointer
-        
-        # 지정된 pointer 위치에 데이터들을 CPU로 저장
+
         self.observation_vector[i] = observation_vector.cpu()
         self.point_clouds.append(point_cloud.cpu())
-        self.continuous_actions[i] = continuous_action.cpu()
+        self.pre_tanh_actions[i] = pre_tanh_action.cpu()
         self.discrete_actions[i] = discrete_action.cpu()
         self.log_probs[i] = log_prob.cpu()
         self.rewards[i] = reward
         self.values[i] = value.cpu()
-        self.dones[i] = float(done) 
+        self.dones[i] = float(done)
         self.bootstraps[i] = bootstrap_value
-        
+        self.agent_ids[i] = agent_id
+
         self.pointer += 1
 
-    def compute_gae(self, last_value: float):
+    def compute_gae(self, last_vals: dict):
+        """에이전트별 독립 GAE 계산. 병렬 에이전트 간 크로스 오염 방지."""
         advantages = torch.zeros(self.pointer)
-        last_gae = 0.0
 
-        for t in reversed(range(self.pointer)):
-            done = self.dones[t].item()
+        # 에이전트 ID별 transition 인덱스 그룹화 (시간 순서 유지)
+        agent_indices: dict[int, list[int]] = {}
+        for t in range(self.pointer):
+            aid = int(self.agent_ids[t].item())
+            if aid not in agent_indices:
+                agent_indices[aid] = []
+            agent_indices[aid].append(t)
 
-            if done:
-                next_value = self.bootstraps[t].item()
-            elif t == self.pointer - 1:
-                next_value = last_value
-            else:
-                next_value = self.values[t+1].item()
-            
-            # TD Error
-            delta = self.rewards[t] + self.gamma * next_value - self.values[t]
-            # GAE 누적 및 전파
-            last_gae = delta + self.gamma * self.lamda * (1.0 - done) * last_gae
-            advantages[t] = last_gae
-        
+        for aid, indices in agent_indices.items():
+            last_gae = 0.0
+            for k in reversed(range(len(indices))):
+                t = indices[k]
+                done = self.dones[t].item()
+
+                if done:
+                    next_value = self.bootstraps[t].item()
+                    last_gae = 0.0
+                elif k == len(indices) - 1:
+                    # 버퍼 내 마지막 transition: 수집 종료 시점의 value로 bootstrap
+                    next_value = last_vals.get(aid, 0.0)
+                else:
+                    # 같은 에이전트의 다음 transition value (올바른 temporal credit)
+                    next_value = self.values[indices[k + 1]].item()
+
+                delta = self.rewards[t] + self.gamma * next_value - self.values[t]
+                last_gae = delta + self.gamma * self.lamda * (1.0 - float(done)) * last_gae
+                advantages[t] = last_gae
+
         target_values = advantages + self.values[:self.pointer]
         return advantages, target_values
-    
-    def get(self, last_value: float):
-        advantages, target_values = self.compute_gae(last_value)
-        # Normalization
+
+    def get(self, last_vals: dict):
+        advantages, target_values = self.compute_gae(last_vals)
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         point_clouds = collate_point_cloud(self.point_clouds[:self.pointer], self.device)
         return RolloutBatch(
             observation_vector=self.observation_vector[:self.pointer].to(self.device),
             point_clouds=point_clouds,
-            continuous_actions=self.continuous_actions[:self.pointer].to(self.device),
+            pre_tanh_actions=self.pre_tanh_actions[:self.pointer].to(self.device),
             discrete_actions=self.discrete_actions[:self.pointer].to(self.device),
             log_probs=self.log_probs[:self.pointer].to(self.device),
             advantages=advantages.to(self.device),
             target_values=target_values.to(self.device),
         )
+
     def reset(self):
         self.pointer = 0
         self.point_clouds.clear()
