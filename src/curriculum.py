@@ -17,9 +17,11 @@ STAGES = [
 
 class CurriculumManager:
     """
-    포획 성공률 기반 자동 단계 상승 관리.
-    Trainer 는 매 iteration 의 에피소드 성공 여부만 report() 로 넘기면,
-    매니저가 윈도우 성공률을 계산해 임계 도달 시 다음 단계 파라미터를 env 채널로 주입한다.
+    포획률 기반 자동 단계 상승 관리.
+    Trainer 는 매 iteration 의 에피소드별 포획률(잡은 수/스폰 수, 0~1)을 report() 로 넘기면,
+    매니저가 윈도우 평균을 계산해 임계 도달 시 다음 단계 파라미터를 env 채널로 주입한다.
+    "전멸 여부" 대신 포획률을 쓰는 이유: 전멸 기준은 마리 수 n 에 대해 난이도가
+    마리당 실력의 n제곱으로 커져 다마리 단계에서 커리큘럼이 영구 정체된다.
     """
     def __init__(
         self,
@@ -42,7 +44,7 @@ class CurriculumManager:
         self._apply(self.stages[self._idx])
 
     def report(self, ep_successes: list) -> bool:
-        """이번 iteration 의 에피소드 성공 여부를 누적. 단계 상승했으면 True."""
+        """이번 iteration 의 에피소드별 포획률(0~1)을 누적. 단계 상승했으면 True."""
         self._window.extend(ep_successes)
         if self._idx < len(self.stages) - 1 and len(self._window) >= self.window_size:
             if self.success_rate >= self.threshold:

@@ -35,5 +35,5 @@ ent_coef_disc: 0.01    # 이산(발사) entropy 계수 — 연속과 분리. H_d
 max_grad_norm: 0.5
 
 # GAE
-gamma: 0.99
+gamma: 0.995    # 에피소드가 600~900 결정 스텝 — 0.99(유효 horizon ~100)는 탐색 구간 보상이 증발
 lam: 0.95
