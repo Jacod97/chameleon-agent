@@ -17,6 +17,11 @@ pointnet_out: 128
 resume_path: null       # 예: results/run_01/model_400.pt — null이면 처음부터
 start_stage: 1          # 커리큘럼 시작 단계 (1~6). resume 시 도달했던 단계 지정
 
+# 평가 (scripts/evaluate.py)
+eval_episodes: 50         # 집계할 에피소드 수
+eval_stage: 6             # 평가 난이도 단계 (1~6)
+eval_deterministic: true  # true면 연속=분포 평균, 발사=최대 확률. false면 학습과 동일한 샘플링
+
 # 학습 루프
 max_iterations: 5000
 buf_size: 10240

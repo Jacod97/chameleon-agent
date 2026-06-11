@@ -119,3 +119,11 @@ class ActorCritic(nn.Module):
     def get_value(self, observation_vector: torch.Tensor, point_cloud: torch.Tensor):
         hidden_vector = self._encode(observation_vector, point_cloud)
         return self.value_head(hidden_vector).squeeze(-1)
+
+    def get_deterministic_action(self, observation_vector: torch.Tensor, point_cloud: torch.Tensor):
+        """평가용 결정론 행동 — 연속은 분포 평균, 이산은 최대 확률 선택 (탐색 노이즈 없음)"""
+        hidden_vector = self._encode(observation_vector, point_cloud)
+        continuous_action = torch.tanh(self.continuous_mean(hidden_vector))
+        discrete_list = [head(hidden_vector).argmax(dim=-1) for head in self.discrete_heads]
+        discrete_action_tensor = torch.stack(discrete_list, dim=-1)
+        return continuous_action, discrete_action_tensor
