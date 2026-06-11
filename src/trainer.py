@@ -45,6 +45,7 @@ class Trainer:
             last_vals, ep_rewards, ep_successes, ep_lengths, ep_timeouts = \
                 self.communicator.collect(self.model, self.buffer)
             batch = self.buffer.get(last_vals)
+            fire_attempt_rate = self.buffer.discrete_actions[:self.buffer.pointer].float().mean().item()
             result = self.ppo.update(batch)
             total_steps += self.buffer.pointer
 
@@ -61,6 +62,7 @@ class Trainer:
                 "value_loss": result.value_loss,
                 "entropy_continuous": result.entropy_continuous,
                 "entropy_discrete": result.entropy_discrete,  # 발사 탐색 붕괴 감시 — 0.1 미만이면 굳은 것
+                "fire_attempt_rate": fire_attempt_rate,  # 난사 판별 — 1.0 근처면 매 스텝 발사 시도
                 "approx_kl": result.approx_kl,
                 "clip_fraction": result.clip_fraction,
                 "explained_variance": result.explained_variance,
@@ -79,7 +81,8 @@ class Trainer:
                       f"ep_reward={mean_reward:.2f} | succ={self.curriculum.success_rate:.2f} | "
                       f"len={mean_len:.0f} timeout={timeout_rate:.2f} | "
                       f"policy={result.policy_loss:.4f} value={result.value_loss:.4f} "
-                      f"ent_c={result.entropy_continuous:.4f} ent_d={result.entropy_discrete:.4f} | "
+                      f"ent_c={result.entropy_continuous:.4f} ent_d={result.entropy_discrete:.4f} "
+                      f"fire={fire_attempt_rate:.2f} | "
                       f"kl={result.approx_kl:.4f} clip={result.clip_fraction:.2f} ev={result.explained_variance:.2f}")
 
             if (iteration + 1) % self.save_interval == 0:

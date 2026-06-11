@@ -3381,6 +3381,7 @@ MonoBehaviour:
   maxYawRateHead: 180
   maxPitchRateHead: 120
   pitchClamp: {x: -60, y: 45}
+  yawClamp: {x: -90, y: 90}
   headPivot: {fileID: 639478282}
   headPitchPivot: {fileID: 126369266}
   tongueMuzzle: {fileID: 1781097403}
@@ -3405,7 +3406,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 10
+    VectorObservationSize: 9
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 4
@@ -3440,6 +3441,7 @@ MonoBehaviour:
   agent: {fileID: 346086362}
   fovDegrees: 90
   maxDetectRange: 3
+  maxMosquitoSpeed: 1
   occlusionMask:
     serializedVersion: 2
     m_Bits: 1216
@@ -3589,6 +3591,7 @@ MonoBehaviour:
   maxCount: 1
   spawnMin: {x: -3, y: 0.5, z: -3}
   spawnMax: {x: 3, y: 2.5, z: 3}
+  stationaryMaxSpawnY: 1.8
 --- !u!4 &376323455
 Transform:
   m_ObjectHideFlags: 0
@@ -8172,6 +8175,7 @@ MonoBehaviour:
   agent: {fileID: 987059115}
   fovDegrees: 90
   maxDetectRange: 3
+  maxMosquitoSpeed: 1
   occlusionMask:
     serializedVersion: 2
     m_Bits: 1216
@@ -8227,6 +8231,7 @@ MonoBehaviour:
   maxYawRateHead: 180
   maxPitchRateHead: 120
   pitchClamp: {x: -60, y: 45}
+  yawClamp: {x: -90, y: 90}
   headPivot: {fileID: 1569278067}
   headPitchPivot: {fileID: 1510612669}
   tongueMuzzle: {fileID: 1884223815}
@@ -8251,7 +8256,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 10
+    VectorObservationSize: 9
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 4
@@ -8760,6 +8765,7 @@ MonoBehaviour:
   maxCount: 1
   spawnMin: {x: -3, y: 0.5, z: -3}
   spawnMax: {x: 3, y: 2.5, z: 3}
+  stationaryMaxSpawnY: 1.8
 --- !u!1 &1039701295
 GameObject:
   m_ObjectHideFlags: 0
@@ -11460,6 +11466,7 @@ MonoBehaviour:
   maxCount: 1
   spawnMin: {x: -3, y: 0.5, z: -3}
   spawnMax: {x: 3, y: 2.5, z: 3}
+  stationaryMaxSpawnY: 1.8
 --- !u!1001 &1266563814
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17222,6 +17229,7 @@ MonoBehaviour:
   agent: {fileID: 1617258244}
   fovDegrees: 90
   maxDetectRange: 3
+  maxMosquitoSpeed: 1
   occlusionMask:
     serializedVersion: 2
     m_Bits: 1216
@@ -17277,6 +17285,7 @@ MonoBehaviour:
   maxYawRateHead: 180
   maxPitchRateHead: 120
   pitchClamp: {x: -60, y: 45}
+  yawClamp: {x: -90, y: 90}
   headPivot: {fileID: 1828869511}
   headPitchPivot: {fileID: 174948938}
   tongueMuzzle: {fileID: 310296285}
@@ -17301,7 +17310,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 10
+    VectorObservationSize: 9
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 4
@@ -19136,6 +19145,7 @@ MonoBehaviour:
   agent: {fileID: 1800300522}
   fovDegrees: 90
   maxDetectRange: 3
+  maxMosquitoSpeed: 1
   occlusionMask:
     serializedVersion: 2
     m_Bits: 1216
@@ -19191,6 +19201,7 @@ MonoBehaviour:
   maxYawRateHead: 180
   maxPitchRateHead: 120
   pitchClamp: {x: -60, y: 45}
+  yawClamp: {x: -90, y: 90}
   headPivot: {fileID: 105250216}
   headPitchPivot: {fileID: 1714628969}
   tongueMuzzle: {fileID: 1663067864}
@@ -19215,7 +19226,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 10
+    VectorObservationSize: 9
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 4
@@ -20189,6 +20200,7 @@ MonoBehaviour:
   maxCount: 1
   spawnMin: {x: -3, y: 0.5, z: -3}
   spawnMax: {x: 3, y: 2.5, z: 3}
+  stationaryMaxSpawnY: 1.8
 --- !u!1001 &1950128042
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -35,5 +35,14 @@ namespace ChameleonRL
         [Header("정밀 사격 보너스 (희소 보상)")]
         [Tooltip("에피소드 내 헛스윙·가구 파손 없이 전멸 달성 시 추가 보상. 0이면 비활성.")]
         public float precisionBonus = 2.0f;
+
+        [Header("효율 사격 보너스")]
+        [Tooltip("직전 포획 이후 efficiencyShotWindow 발 이내에 포획 성공 시 추가 보상. " +
+                 "헛발사 한계비용(0.05)이 catch(1.0) 대비 작아 난사가 기대값상 이득인 구조를 " +
+                 "양수 보상으로 교정 — 패널티 강화와 달리 발사 탐색 붕괴 위험 없음. 0이면 비활성.")]
+        public float efficiencyBonus = 0.5f;
+
+        [Tooltip("효율 보너스 인정 발사 횟수 (포획한 그 발 포함)")]
+        public int efficiencyShotWindow = 3;
     }
 }

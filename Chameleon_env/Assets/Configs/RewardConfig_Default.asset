@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: RewardConfig_Default
   m_EditorClassIdentifier:
   catchReward: 1
-  missPenalty: 0.05
+  missPenalty: 0.01
   timePenaltyPerStep: 0.001
   approachCoeff: 0.05
   breakPenalty: 5
   successBonus: 1
   precisionBonus: 2
+  efficiencyBonus: 0.5
+  efficiencyShotWindow: 3

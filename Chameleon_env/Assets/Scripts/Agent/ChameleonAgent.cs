@@ -8,9 +8,9 @@ namespace ChameleonRL
 {
     /// <summary>
     /// 카멜레온 에이전트. Unity ML-Agents Agent 를 상속.
-    /// 관측 9-dim 벡터 + PointNet BufferSensor (모기 집합).
+    /// 관측 10-dim 벡터 + PointNet BufferSensor (모기 집합).
     /// 행동 연속 4 + 이산 2 (대기/혀발사).
-    /// 보상: r_catch + r_miss + r_time + r_approach + r_break + r_success + r_precision.
+    /// 보상: r_catch + r_miss + r_time + r_approach + r_break + r_success + r_precision + r_efficiency.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public class ChameleonAgent : Agent
@@ -44,6 +44,7 @@ namespace ChameleonRL
         private Rigidbody _rb;
         private int _catches;
         private int _misses;
+        private int _shotsSinceLastCatch;
 
         public override void Initialize()
         {
@@ -90,6 +91,7 @@ namespace ChameleonRL
             // ⑦ 카운터 리셋
             _catches = 0;
             _misses = 0;
+            _shotsSinceLastCatch = 0;
         }
 
         [Header("관측 정규화")]
@@ -104,7 +106,7 @@ namespace ChameleonRL
 
         public override void CollectObservations(VectorSensor sensor)
         {
-            // 벡터 관측 7-dim (docs/RL_Design.md §3.1)
+            // 벡터 관측 10-dim (docs/RL_Design.md §3.1)
             // 위치 = 자기 영역(방 중앙=초기 위치) 기준 상대좌표. 병렬 복제 시 영역 오프셋과 무관하게 [-1,1] 유지
             Vector3 relativePosition = transform.position - _initialPosition;
             sensor.AddObservation(relativePosition.x / positionNormScale);
@@ -129,6 +131,10 @@ namespace ChameleonRL
 
             // 무실수 플래그 — precision bonus(+2) 수령 가능 여부. 없으면 가치함수가 원리적으로 예측 불가
             sensor.AddObservation(_misses == 0 ? 1f : 0f);
+
+            // 직전 포획 이후 발사 수 — efficiency bonus 수령 가능 여부 (window 에서 포화, 1.0 = 보너스 소멸)
+            sensor.AddObservation(Mathf.Min(_shotsSinceLastCatch, rewardConfig.efficiencyShotWindow)
+                                  / (float)rewardConfig.efficiencyShotWindow);
 
             // PointNet (BufferSensorComponent) 입력 채우기
             mosquitoSensor.Tick();
@@ -228,12 +234,20 @@ namespace ChameleonRL
         {
             AddReward(+rewardConfig.catchReward);
             _catches++;
+            _shotsSinceLastCatch++;
+            if (rewardConfig.efficiencyBonus > 0f
+                && _shotsSinceLastCatch <= rewardConfig.efficiencyShotWindow)
+            {
+                AddReward(+rewardConfig.efficiencyBonus);
+            }
+            _shotsSinceLastCatch = 0;
         }
 
         public void OnAttackMissed()
         {
             AddReward(-rewardConfig.missPenalty);
             _misses++;
+            _shotsSinceLastCatch++;
         }
 
         public void OnApproach(float distanceReduction)
