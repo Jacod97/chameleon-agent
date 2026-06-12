@@ -6,7 +6,7 @@ from .communicator import UnityCommunicator
 from .buffer import RolloutBuffer
 from .ppo import PPO
 from .curriculum import CurriculumManager
-from .logger import MLflowLogger
+from .logger import MLflowTracker
 
 
 class Trainer:
@@ -17,7 +17,7 @@ class Trainer:
         ppo: PPO,
         buffer: RolloutBuffer,
         curriculum: CurriculumManager,
-        logger: MLflowLogger,
+        logger: MLflowTracker,
         save_dir: str,
         max_iterations: int,
         log_interval: int = 10,

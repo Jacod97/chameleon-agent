@@ -15,7 +15,7 @@ from src.buffer import RolloutBuffer
 from src.ppo import PPO
 from src.communicator import UnityCommunicator
 from src.curriculum import CurriculumManager, STAGES
-from src.logger import MLflowLogger
+from src.logger import MLflowTracker
 from src.trainer import Trainer
 
 
@@ -71,7 +71,7 @@ def main(cfg: DictConfig):
     )
     communicator = UnityCommunicator(env, behavior_name, device)
 
-    logger = MLflowLogger(experiment_name="chameleon-rl")
+    logger = MLflowTracker(experiment_name="chameleon-rl")
     logger.log_params({
         "lr": cfg["lr"], "clip_eps": cfg["clip_eps"], "vf_coef": cfg["vf_coef"],
         "ent_coef": cfg["ent_coef"], "ent_coef_disc": cfg["ent_coef_disc"],
