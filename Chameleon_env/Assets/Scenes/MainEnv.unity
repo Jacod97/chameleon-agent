@@ -3390,6 +3390,7 @@ MonoBehaviour:
   mosquitoSpawner: {fileID: 376323454}
   mosquitoSensor: {fileID: 346086364}
   rewardConfig: {fileID: 11400000, guid: ad7cc1a1f14c3424eadf7f4ef5f0e7e0, type: 2}
+  noDetectionSuccessSeconds: 25
   positionNormScale: 3.5
   velocityNormScale: 1
   pitchNormScale: 60
@@ -8149,7 +8150,7 @@ Transform:
   m_GameObject: {fileID: 987059110}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.26879, y: 0.25, z: 1.84518}
+  m_LocalPosition: {x: 1.26879, y: 0.144, z: 1.84518}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -8240,6 +8241,7 @@ MonoBehaviour:
   mosquitoSpawner: {fileID: 1034910250}
   mosquitoSensor: {fileID: 987059112}
   rewardConfig: {fileID: 11400000, guid: ad7cc1a1f14c3424eadf7f4ef5f0e7e0, type: 2}
+  noDetectionSuccessSeconds: 25
   positionNormScale: 3.5
   velocityNormScale: 1
   pitchNormScale: 60
@@ -11146,7 +11148,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: e549524c147e3da43880ec9d8a529ffc, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -17294,6 +17296,7 @@ MonoBehaviour:
   mosquitoSpawner: {fileID: 1949460721}
   mosquitoSensor: {fileID: 1617258241}
   rewardConfig: {fileID: 11400000, guid: ad7cc1a1f14c3424eadf7f4ef5f0e7e0, type: 2}
+  noDetectionSuccessSeconds: 25
   positionNormScale: 3.5
   velocityNormScale: 1
   pitchNormScale: 60
@@ -19210,6 +19213,7 @@ MonoBehaviour:
   mosquitoSpawner: {fileID: 1264094126}
   mosquitoSensor: {fileID: 1800300519}
   rewardConfig: {fileID: 11400000, guid: ad7cc1a1f14c3424eadf7f4ef5f0e7e0, type: 2}
+  noDetectionSuccessSeconds: 25
   positionNormScale: 3.5
   velocityNormScale: 1
   pitchNormScale: 60
