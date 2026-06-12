@@ -16,13 +16,6 @@ STAGES = [
 ]
 
 class CurriculumManager:
-    """
-    포획률 기반 자동 단계 상승 관리.
-    Trainer 는 매 iteration 의 에피소드별 포획률(잡은 수/스폰 수, 0~1)을 report() 로 넘기면,
-    매니저가 윈도우 평균을 계산해 임계 도달 시 다음 단계 파라미터를 env 채널로 주입한다.
-    "전멸 여부" 대신 포획률을 쓰는 이유: 전멸 기준은 마리 수 n 에 대해 난이도가
-    마리당 실력의 n제곱으로 커져 다마리 단계에서 커리큘럼이 영구 정체된다.
-    """
     def __init__(
         self,
         channel: EnvironmentParametersChannel,
@@ -56,7 +49,6 @@ class CurriculumManager:
         return False
 
     def _apply(self, stage: CurriculumStage):
-        # dataclass 필드를 그대로 돌면서 채널에 주입 (하드코딩 dict 없이)
         for key, value in stage.to_params().items():
             self.channel.set_float_parameter(key, float(value))
 

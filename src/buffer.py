@@ -20,7 +20,6 @@ class RolloutBuffer:
         self.device = device
 
         self.observation_vector = torch.zeros(buffer_size, observation_dim)
-        # pre-tanh u 저장 (tanh 적용 전) — evaluate 시 atanh 복원 불필요, 경계 수치 오차 제거
         self.pre_tanh_actions = torch.zeros(buffer_size, continuous_dim)
         self.discrete_actions = torch.zeros(buffer_size, discrete_size, dtype=torch.long)
 

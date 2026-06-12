@@ -63,7 +63,7 @@ class ActorCritic(nn.Module):
 
         # Continous: tanh-squashed Gaussian
         mean = self.continuous_mean(hidden_vector)
-        std = self.log_std.clamp(-2.0, 0.5).exp().expand_as(mean)  # 상한 0.5 -> std<=1.65, entropy 폭주 차단
+        std = self.log_std.clamp(-2.0, 0.5).exp().expand_as(mean)  
         continuous_dist = Normal(mean, std)
         u = continuous_dist.rsample() # Gaussian sampling, rsample써야 미분 가능 sample x
         continuous_action = torch.tanh(u)
