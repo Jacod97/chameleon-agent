@@ -92,6 +92,8 @@ mlflow ui    # → http://localhost:5000 , experiment: chameleon-rl
 
 ### 7. 학습된 정책 평가
 
+> **학습된 모델 다운로드:** 최종 학습 모델이 레포에 포함되어 있다 — **[`models/chameleon_ppo_final.pt`](models/chameleon_ppo_final.pt)** (225KB). 아래 명령들에 `resume_path=models/chameleon_ppo_final.pt` 로 바로 사용 가능.
+
 ```powershell
 # 결정론 모드(탐색 노이즈 제거)로 포획률 · 전멸률 · 발당 명중률 집계
 python scripts/evaluate.py resume_path=results/run6/model_900.pt eval_stage=5 eval_episodes=50

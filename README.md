@@ -93,6 +93,8 @@ mlflow ui    # → http://localhost:5000 , experiment: chameleon-rl
 
 ### 7. Evaluating a Trained Policy
 
+> **Trained model download:** the final trained checkpoint ships with this repo — **[`models/chameleon_ppo_final.pt`](models/chameleon_ppo_final.pt)** (225KB). Pass it as `resume_path=models/chameleon_ppo_final.pt` to any command below.
+
 ```powershell
 # Deterministic mode (no exploration noise) — catch rate, full-clear rate, per-shot accuracy
 python scripts/evaluate.py resume_path=results/run6/model_900.pt eval_stage=5 eval_episodes=50

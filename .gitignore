@@ -20,6 +20,9 @@ results/
 *.onnx
 *.log
 
+# 배포용 최종 모델은 추적 (README 다운로드 링크 대상)
+!models/chameleon_ppo_final.pt
+
 # MLflow
 mlruns/
 mlartifacts/
