@@ -44,10 +44,5 @@ namespace ChameleonRL
 
         [Tooltip("효율 보너스 인정 발사 횟수 (포획한 그 발 포함)")]
         public int efficiencyShotWindow = 3;
-
-        [Header("임무 완료 선언 시 잔여 모기 벌점")]
-        [Tooltip("무감지 시간 초과로 에피소드가 끝났는데 모기가 남아 있으면 마리당 이 값을 감점. " +
-                 "부호는 코드에서 - 적용. 벽만 보고 조기 종료하는 보상 해킹 차단 — catch(+1.0)와 대칭")]
-        public float missedMosquitoPenalty = 1.0f;
     }
 }

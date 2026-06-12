@@ -21,4 +21,3 @@ MonoBehaviour:
   precisionBonus: 2
   efficiencyBonus: 0.5
   efficiencyShotWindow: 3
-  missedMosquitoPenalty: 0

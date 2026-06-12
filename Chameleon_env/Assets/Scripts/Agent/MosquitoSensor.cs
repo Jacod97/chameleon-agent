@@ -27,9 +27,6 @@ namespace ChameleonRL
         [Header("Occlusion 차단 레이어 (Room + Furniture)")]
         public LayerMask occlusionMask;
 
-        /// <summary>직전 Tick 에서 시야·차폐 판정을 통과한 모기 수</summary>
-        public int DetectedCount { get; private set; }
-
         private BufferSensorComponent _buffer;
         private float _prevNearestDist = float.MaxValue;
 
@@ -56,7 +53,6 @@ namespace ChameleonRL
 
             float halfFovCos = Mathf.Cos(fovDegrees * 0.5f * Mathf.Deg2Rad);
             float nearest = float.MaxValue;
-            DetectedCount = 0;
 
             // Alive 는 포획 즉시 동기 제거되므로 null/파괴 객체가 섞일 수 없음 (섞이면 그게 버그)
             foreach (var m in spawner.Alive)
@@ -90,7 +86,6 @@ namespace ChameleonRL
                     relVel.z / maxMosquitoSpeed,
                 };
                 _buffer.AppendObservation(obs);
-                DetectedCount++;
 
                 if (dist < nearest) nearest = dist;
             }

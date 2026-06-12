@@ -8,10 +8,9 @@ namespace ChameleonRL
 {
     /// <summary>
     /// 카멜레온 에이전트. Unity ML-Agents Agent 를 상속.
-    /// 관측 11-dim 벡터 + PointNet BufferSensor (모기 집합).
+    /// 관측 10-dim 벡터 + PointNet BufferSensor (모기 집합).
     /// 행동 연속 4 + 이산 2 (대기/혀발사).
-    /// 보상: r_catch + r_miss + r_time + r_approach + r_break + r_success + r_precision + r_efficiency + r_missed.
-    /// 종료: 전지적 전멸 판정 대신 "일정 시간 무감지 → 임무 완료 선언" (현실 반영 — 로봇은 잔여 수를 모름).
+    /// 보상: r_catch + r_miss + r_time + r_approach + r_break + r_success + r_precision + r_efficiency.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public class ChameleonAgent : Agent
@@ -40,20 +39,12 @@ namespace ChameleonRL
         [Header("보상")]
         public RewardConfig rewardConfig;
 
-        [Header("탐지 기반 성공 판정")]
-        [Tooltip("이 시간(초) 동안 모기가 한 마리도 감지되지 않으면 임무 완료로 선언하고 에피소드 종료. " +
-                 "실제로 전멸이면 성공 보상, 남아 있으면 마리당 missedMosquitoPenalty 벌점. " +
-                 "15s 는 정상 비행(1m/s) 표적 재획득에 부족 — run7 4단계 0.51 횡보로 확인, 25s 로 완화")]
-        public float noDetectionSuccessSeconds = 25f;
-
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
         private Rigidbody _rb;
         private int _catches;
         private int _misses;
         private int _shotsSinceLastCatch;
-        private int _decisionsSinceDetection;
-        private int _noDetectionThresholdDecisions;
 
         public override void Initialize()
         {
@@ -71,11 +62,6 @@ namespace ChameleonRL
             if (mosquitoSensor == null) throw new System.InvalidOperationException("[ChameleonAgent] mosquitoSensor 미설정");
             if (rewardConfig == null) throw new System.InvalidOperationException("[ChameleonAgent] rewardConfig 미설정");
             if (mosquitoSpawner.mosquitoPrefab == null) throw new System.InvalidOperationException("[ChameleonAgent] mosquitoSpawner.mosquitoPrefab 미설정");
-
-            var decisionRequester = GetComponent<DecisionRequester>();
-            if (decisionRequester == null) throw new System.InvalidOperationException("[ChameleonAgent] DecisionRequester 미부착");
-            float decisionIntervalSeconds = Time.fixedDeltaTime * decisionRequester.DecisionPeriod;
-            _noDetectionThresholdDecisions = Mathf.CeilToInt(noDetectionSuccessSeconds / decisionIntervalSeconds);
         }
 
         public override void OnEpisodeBegin()
@@ -106,7 +92,6 @@ namespace ChameleonRL
             _catches = 0;
             _misses = 0;
             _shotsSinceLastCatch = 0;
-            _decisionsSinceDetection = 0;
         }
 
         [Header("관측 정규화")]
@@ -153,11 +138,6 @@ namespace ChameleonRL
 
             // PointNet (BufferSensorComponent) 입력 채우기
             mosquitoSensor.Tick();
-
-            // 무감지 경과 비율 — 1.0 도달 시 임무 완료 선언으로 종료. 없으면 종료·벌점이 가치함수에 예측 불가
-            if (mosquitoSensor.DetectedCount > 0) _decisionsSinceDetection = 0;
-            else _decisionsSinceDetection++;
-            sensor.AddObservation(Mathf.Min(1f, _decisionsSinceDetection / (float)_noDetectionThresholdDecisions));
         }
 
         public override void OnActionReceived(ActionBuffers actions)
@@ -212,21 +192,13 @@ namespace ChameleonRL
                 return;
             }
 
-            // 임무 완료 선언: 일정 시간 무감지 = 성공 (실사용 요구는 "주변에 모기가 없을 것" — 숨어서
-            // 한 번도 안 보인 모기까지 책임지지 않음). 정밀 보상은 실제 전멸 + 무실수일 때만.
-            // 잔존 벌점은 외면 보상 해킹이 관측되면 재활성용으로 유지 (현재 asset 값 0)
-            if (_decisionsSinceDetection >= _noDetectionThresholdDecisions)
+            // 성공 종료: 모든 모기 잡음
+            if (mosquitoSpawner.AliveCount == 0)
             {
                 AddReward(+rewardConfig.successBonus);
-                if (mosquitoSpawner.AliveCount == 0)
-                {
-                    if (_misses == 0 && rewardConfig.precisionBonus > 0f)
-                        AddReward(+rewardConfig.precisionBonus);
-                }
-                else
-                {
-                    AddReward(-rewardConfig.missedMosquitoPenalty * mosquitoSpawner.AliveCount);
-                }
+                // 헛스윙 없이 전멸 — 정밀 사격 희소 보상
+                if (_misses == 0 && rewardConfig.precisionBonus > 0f)
+                    AddReward(+rewardConfig.precisionBonus);
                 EndEpisode();
             }
         }
