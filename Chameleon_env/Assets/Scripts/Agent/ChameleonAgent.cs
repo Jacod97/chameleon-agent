@@ -42,8 +42,9 @@ namespace ChameleonRL
 
         [Header("탐지 기반 성공 판정")]
         [Tooltip("이 시간(초) 동안 모기가 한 마리도 감지되지 않으면 임무 완료로 선언하고 에피소드 종료. " +
-                 "실제로 전멸이면 성공 보상, 남아 있으면 마리당 missedMosquitoPenalty 벌점")]
-        public float noDetectionSuccessSeconds = 15f;
+                 "실제로 전멸이면 성공 보상, 남아 있으면 마리당 missedMosquitoPenalty 벌점. " +
+                 "15s 는 정상 비행(1m/s) 표적 재획득에 부족 — run7 4단계 0.51 횡보로 확인, 25s 로 완화")]
+        public float noDetectionSuccessSeconds = 25f;
 
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
