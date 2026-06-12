@@ -1,6 +1,6 @@
 import mlflow
 
-class MLflowLogger:
+class MLflowTracker:
     """학습 지표를 MLflow 로 기록"""
     def __init__(self, experiment_name: str = "chameleon-rl", run_name: str = None):
         mlflow.set_experiment(experiment_name)
