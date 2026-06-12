@@ -5,14 +5,15 @@ from mlagents_envs.side_channel.environment_parameters_channel import Environmen
 from ._type import CurriculumStage
 
 
-# 6단계 커리큘럼
+# 7단계 커리큘럼 — 저속(0.3)→정상(1.0) 3.3배 점프에서 학습이 정체되어 중속(0.6) 단계 삽입
 STAGES = [
     CurriculumStage("1 정지·근접", mosquito_count_min=1, mosquito_count_max=1,  mosquito_stationary=1, mosquito_speed_scale=0.0, spawn_scale=0.25),
     CurriculumStage("2 정지·방전체", mosquito_count_min=1, mosquito_count_max=1,  mosquito_stationary=1, mosquito_speed_scale=0.0, spawn_scale=1.0),
     CurriculumStage("3 저속비행", mosquito_count_min=1, mosquito_count_max=1,  mosquito_stationary=0, mosquito_speed_scale=0.3, spawn_scale=1.0),
-    CurriculumStage("4 정상비행", mosquito_count_min=1, mosquito_count_max=1,  mosquito_stationary=0, mosquito_speed_scale=1.0, spawn_scale=1.0),
-    CurriculumStage("5 3마리", mosquito_count_min=3, mosquito_count_max=3,  mosquito_stationary=0, mosquito_speed_scale=1.0, spawn_scale=1.0),
-    CurriculumStage("6 3~10마리", mosquito_count_min=3, mosquito_count_max=10, mosquito_stationary=0, mosquito_speed_scale=1.0, spawn_scale=1.0),
+    CurriculumStage("4 중속비행", mosquito_count_min=1, mosquito_count_max=1,  mosquito_stationary=0, mosquito_speed_scale=0.6, spawn_scale=1.0),
+    CurriculumStage("5 정상비행", mosquito_count_min=1, mosquito_count_max=1,  mosquito_stationary=0, mosquito_speed_scale=1.0, spawn_scale=1.0),
+    CurriculumStage("6 3마리", mosquito_count_min=3, mosquito_count_max=3,  mosquito_stationary=0, mosquito_speed_scale=1.0, spawn_scale=1.0),
+    CurriculumStage("7 3~10마리", mosquito_count_min=3, mosquito_count_max=10, mosquito_stationary=0, mosquito_speed_scale=1.0, spawn_scale=1.0),
 ]
 
 class CurriculumManager:
