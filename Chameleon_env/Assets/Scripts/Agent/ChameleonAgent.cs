@@ -212,14 +212,14 @@ namespace ChameleonRL
                 return;
             }
 
-            // 임무 완료 선언: 일정 시간 무감지 — 로봇은 잔여 수를 모르므로 전지적 전멸 판정 대신 사용.
-            // 판정은 시뮬레이터의 실제 잔여 수로: 전멸이면 성공 보상, 남았으면 마리당 벌점 (조기 포기 차단)
+            // 임무 완료 선언: 일정 시간 무감지 = 성공 (실사용 요구는 "주변에 모기가 없을 것" — 숨어서
+            // 한 번도 안 보인 모기까지 책임지지 않음). 정밀 보상은 실제 전멸 + 무실수일 때만.
+            // 잔존 벌점은 외면 보상 해킹이 관측되면 재활성용으로 유지 (현재 asset 값 0)
             if (_decisionsSinceDetection >= _noDetectionThresholdDecisions)
             {
+                AddReward(+rewardConfig.successBonus);
                 if (mosquitoSpawner.AliveCount == 0)
                 {
-                    AddReward(+rewardConfig.successBonus);
-                    // 헛스윙 없이 전멸 — 정밀 사격 희소 보상
                     if (_misses == 0 && rewardConfig.precisionBonus > 0f)
                         AddReward(+rewardConfig.precisionBonus);
                 }
